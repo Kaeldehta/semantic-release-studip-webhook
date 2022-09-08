@@ -1,13 +1,12 @@
 const SemanticReleaseError = require("@semantic-release/error");
 const process = require('process');
 const axios = require("axios");
-const crypto = require('crypto');
 
-const SECRET = process.env.STUDIP_SECRET;
+const URL = process.env.STUDIP_WEBHOOK_URL;
 
 async function success(pluginConfig, context) {
 
-  const {url, prerelease} = pluginConfig;
+  const {prerelease} = pluginConfig;
 
   const {logger, branch} = context;
 
@@ -16,13 +15,7 @@ async function success(pluginConfig, context) {
   if(type === 'release' || (type === 'prerelease' && prerelease)) {
     logger.log("Sending request to studip webhook");
 
-    const hash = crypto.createHmac('sha256', SECRET)
-
-    const body = {};
-
-    await axios.post(url, body, {headers: {
-      "x-hub-signature-256": hash.update(body).digest('hex')
-    }})
+    await axios.post(URL);
 
     logger.log("Successfully notified studip about release");
   }
@@ -31,14 +24,10 @@ async function success(pluginConfig, context) {
 
 async function verifyConditions(pluginConfig, context) {
 
-  const {url, prerelease} = pluginConfig;
+  const {prerelease} = pluginConfig;
 
-  if(!url) {
-    throw new SemanticReleaseError('Missing parameter url in plugin configuration', 'EINVALIDCONFIG');
-  }
-
-  if(!SECRET) {
-    throw new SemanticReleaseError('Missing environment variable STUDIP_SECRET', 'EINVALIDCONFIG');
+  if(!URL) {
+    throw new SemanticReleaseError('Missing environment variable STUDIP_WEBHOOK_URL', 'EINVALIDCONFIG');
   }
 
   if(prerelease && typeof prerelease !== 'boolean') {
